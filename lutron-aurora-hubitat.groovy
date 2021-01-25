@@ -4,12 +4,11 @@
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *  http://www.apache.org/licenses/LICENSE-2.0
  *
  *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
- *
  */
 metadata {
 	definition (name: "Lutron Aurora Dimmer - Custom", namespace: "edu", author: "Eduardo Simioni") {
@@ -24,8 +23,7 @@ metadata {
 		fingerprint profileId: "0104", inClusters: "0000,0001,0003,1000,FC00", outClusters: "0003,0004,0006,0008,0019,1000", manufacturer: "Lutron", model: "Z3-1BRL"
     }
     preferences {
-        input(name: "debugLogging", type: "bool", title: "Enable debug logging", description: "", defaultValue: false, submitOnChange: true, displayDuringSetup: false, required: false)
-        input(name: "infoLogging", type: "bool", title: "Enable info logging", description: "", defaultValue: true, submitOnChange: true, displayDuringSetup: false, required: false)
+        input(name: "debug", type: "bool", title: "Enable debug logging", description: "", defaultValue: false, submitOnChange: true, displayDuringSetup: false, required: false)
         
         input(name: "useDeviceSpeed", type: "bool", title: "Use level change speed from the physical device", description: "Not recommended (default: disabled)", defaultValue: false)
         input(name: "useButtonAsSwitch", type: "bool", title: "Use button click to switch on/off", description: "If disabled the event is available to be used in the Rule Machine (default: disabled)", defaultValue: false)
@@ -44,10 +42,10 @@ metadata {
 }
 
 def parse(String description) {
-	log.debug "description = $description"
+	if (debug) log.debug "description = $description"
 	def event = zigbee.getEvent(description)
 	if (event) {
-        log.debug "sending ${event}"
+        if (debug) log.debug "sending ${event}"
         if (event.name == "battery") {
             sendEvent(name: event.name, value: event.value, unit: "%", isStateChange: false)
 		} else if (event.name == "batteryVoltage") {
@@ -60,7 +58,7 @@ def parse(String description) {
 		def descMap = zigbee.parseDescriptionAsMap(description)
         if (descMap && descMap.clusterInt == 0x008) {
             if (descMap.data.size() < 3) {
-                log.debug "Ignoring data ${descMap.data}"
+                if (debug) log.debug "Ignoring data ${descMap.data}"
             } else {
                handleLevelEvent(descMap)
             }
@@ -68,7 +66,7 @@ def parse(String description) {
             handleButtonEvent()
 		} else {
 			log.warn "DID NOT PARSE MESSAGE for description : $description"
-			log.debug "${descMap}"
+			if (debug) log.debug "${descMap}"
 		}
 	}
 }
@@ -76,14 +74,14 @@ def parse(String description) {
 def handleButtonEvent() {
     state.lastClick = now()
     if (useButtonAsSwitch) {
-        log.debug "Button pressed, handling as switch"
+        if (debug) log.debug "Button pressed, handling as switch"
         if (state.level == 0) {
             setLevel(1)
         } else {
             sendSwitchEvent(device.currentValue("switch") != "on")
         }
     } else {
-        log.debug "Button pressed, handling as pushed"
+        if (debug) log.debug "Button pressed, handling as pushed"
         sendEvent(name: "pushed", value: 1, isStateChange: true, descriptionText: "Aurora button was pushed")
     }
 }
@@ -103,37 +101,37 @@ def setLevel(value) {
 def handleLevelEvent(descMap) {
     state.changeTime = now()
     if (state.changeTime - state.lastClick < silentTimeAfterClick) {
-        log.debug "Ignoring level even under ${silentTimeAfterClick}ms after a click"
+        if (debug) log.debug "Ignoring level even under ${silentTimeAfterClick}ms after a click"
         return
     }
-    log.trace "Level data = ${descMap.data}"
-    log.trace "Button turned, setting level from driver data"
+    if (debug) log.debug "Level data = ${descMap.data}"
+    if (debug) log.debug "Button turned, setting level from driver data"
     int deviceLevel = descMap.data.size() < 3 ? 0 : Integer.parseInt(descMap.data[0], 16) * (100/254)
     calculateSpeed(deviceLevel)
     if (deviceLevel > state.previousDeviceLevel || (deviceLevel == 100 && state.previousDeviceLevel == 100)) {
-        log.debug "Increasing driver level"
+        if (debug) log.debug "Increasing driver level"
         state.level = state.level + state.speed
     } else if (deviceLevel < state.previousDeviceLevel || (deviceLevel == 0 && state.previousDeviceLevel == 0)) {
-        log.debug "Decreasing driver level"
+        if (debug) log.debug "Decreasing driver level"
         state.level = state.level - state.speed
     }
     state.previousDeviceLevel = deviceLevel
     if (state.level > 100) {
-        log.debug "Limiting driver level to 100"
+        if (debug) log.debug "Limiting driver level to 100"
         state.level = 100;
     } else if (state.level < 0) {
-        log.debug "Limiting driver level to 0"
+        if (debug) log.debug "Limiting driver level to 0"
         state.level = 0;
     }
-    log.debug "Device level = ${deviceLevel}"
-    log.debug "Driver level = ${state.level}%"
+    if (debug) log.debug "Device level = ${deviceLevel}"
+    if (debug) log.debug "Driver level = ${state.level}%"
     setLevel(state.level)
 }
 
 def calculateSpeed(deviceLevel) {
     if (useDeviceSpeed && deviceLevel - state.previousDeviceLevel != 0) {
         state.speed = Math.abs(deviceLevel - state.previousDeviceLevel);
-        log.debug "Device speed is ${state.speed}"
+        if (debug) log.debug "Device speed is ${state.speed}"
         return
     }
     long intervalMillis = state.changeTime - state.previousChangeTime
@@ -150,7 +148,7 @@ def calculateSpeed(deviceLevel) {
         state.speed = 1
     }
     state.previousChangeTime = state.changeTime
-    log.debug "Calculated speed is ${state.speed} (${intervalMillis}ms)"
+    if (debug) log.debug "Calculated speed is ${state.speed} (${intervalMillis}ms)"
 }
 
 def off() {
@@ -175,7 +173,7 @@ def refresh() {
 
 def resetParameters() {
     sendEvent(name: "switch", value: "off", displayed: false)
-	sendEvent(name: "level", value: 100, displayed: false)
+	sendEvent(name: "level", value: 0, displayed: false)
 	sendEvent(name: "pushed", value: "1", displayed: false)
 	sendEvent(name: "numberOfButtons", value: 1, displayed: false)
 }
@@ -196,6 +194,7 @@ def setDriverVersion() {
 
 def configure() {
     log.info "Configured..."
+    refresh()
     zigbee.onOffConfig() + 
         zigbee.levelConfig() +
         zigbee.enrollResponse() + 
