@@ -1,0 +1,19 @@
+{
+  "packageName": "Lutron Aurora Dimmer Driver",
+  "minimumHEVersion": "2.2.0",
+  "author": "Eduardo Simioni",
+  "version": "1.0",
+  "dateReleased": "2021-01-25",
+  "licenseFile": "",
+  "releaseNotes": "",
+  "apps": [],
+  "drivers": [
+    {
+      "id": "33197b30-cdaf-4154-99a7-42ca22bc1068",
+      "name": "Lutron Aurora Dimmer - Custom",
+      "namespace": "esimioni.lutronAurora",
+      "location": "https://raw.githubusercontent.com/esimioni/lutron-aurora-hubitat/main/lutron-aurora-hubitat.groovy",
+      "required": true
+    }
+  ]
+}

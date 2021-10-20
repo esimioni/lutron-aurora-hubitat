@@ -1,0 +1,17 @@
+{
+  "author": "Eduardo Simioni",
+  "gitHubUrl": "https://github.com/esimioni",
+  "packages": [
+    {
+      "name": "Lutron Aurora Dimmer Driver",
+      "category": "Control",
+      "tags": [
+        "Buttons",
+        "Lights & Switches",
+        "Zigbee"
+      ],
+      "location": "https://raw.githubusercontent.com/esimioni/lutron-aurora-hubitat/main/hpm/manifest.json",
+      "description": "Similar to the official driver, except it contains the ability to set the level and customize the push button."
+    }
+  ]
+}
