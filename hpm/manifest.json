@@ -11,7 +11,7 @@
     {
       "id": "33197b30-cdaf-4154-99a7-42ca22bc1068",
       "name": "Lutron Aurora Dimmer - Custom",
-      "namespace": "esimioni.lutronAurora",
+      "namespace": "edu",
       "location": "https://raw.githubusercontent.com/esimioni/lutron-aurora-hubitat/main/lutron-aurora-hubitat.groovy",
       "required": true
     }
